@@ -1,0 +1,28 @@
+---
+# SamurAI Forge :: sonda de contrato (no-op)
+#
+# Roda só com connection local (as variáveis do inventário forge-probe forçam
+# ansible_connection=local): não acessa host nenhum, não instala nada, não
+# chama serviço externo. Existe para gerar no Controller amostras reais de:
+#   - job fatiado (job_slice_count=2 -> workflow_job com 2 jobs);
+#   - workflow job com nós (sucesso + ramo de falha que não executa);
+#   - artifacts de set_stats agregados entre hosts, fatias e nós;
+#   - variáveis mágicas awx_job_id / awx_workflow_job_id.
+- name: "SamurAI Forge :: contract probe (no-op)"
+  hosts: all
+  gather_facts: false
+  become: false
+  tasks:
+    - name: "Report probe context"
+      ansible.builtin.debug:
+        msg: "forge probe on {{ inventory_hostname }} marker={{ forge_probe_marker | default('none') }}"
+
+    - name: "Publish artifacts (set_stats, aggregated)"
+      ansible.builtin.set_stats:
+        data:
+          forge_probe_marker: "{{ forge_probe_marker | default('none') }}"
+          forge_probe_job_id: "{{ awx_job_id | default(none) }}"
+          forge_probe_workflow_job_id: "{{ awx_workflow_job_id | default(none) }}"
+          forge_probe_hosts: ["{{ inventory_hostname }}"]
+        per_host: false
+        aggregate: true
